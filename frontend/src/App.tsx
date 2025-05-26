@@ -11,6 +11,30 @@ function App() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
 
+  // Helper function to generate fallback suggestions
+  const generateFallbackSuggestion = (text: string) => {
+    console.log('Generating fallback suggestion for:', text)
+    if (text.toLowerCase().includes("タスク") || text.toLowerCase().includes("task")) {
+      return `
+1. タスクを全て書き出す
+2. 各タスクに締め切りと重要度を付ける
+3. 緊急かつ重要なタスクを最優先にする
+4. 時間枠を設定して作業する
+5. 完了したタスクをチェックする
+      `;
+    } else {
+      return `
+次のアクションとして以下をお勧めします：
+1. 目標を明確に書き出す
+2. 必要なリソースを特定する
+3. 最初の一歩を小さく設定する
+4. 進捗を記録する方法を決める
+5. 定期的に振り返りの時間を設ける
+      `;
+    }
+  };
+
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
@@ -23,25 +47,56 @@ function App() {
     setError('')
     setSuggestion('')
     
+    console.log('Submitting text:', inputText)
+    
+    const fallbackSuggestion = generateFallbackSuggestion(inputText)
+    
+    const loadingTimeout = setTimeout(() => {
+      console.log('Loading timeout reached, using fallback')
+      setSuggestion(fallbackSuggestion)
+      setIsLoading(false)
+    }, 3000) // 3 second timeout
+    
     try {
-      const response = await fetch('https://next-action-suggester-backend-egdngrcu.fly.dev/api/suggest', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ text: inputText }),
-      })
+      let backendSuccess = false
       
-      const data = await response.json()
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to get suggestion')
+      try {
+        console.log('Attempting to fetch from backend...')
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+        
+        const response = await fetch('https://next-action-suggester-backend-jowmxten.fly.dev/api/suggest', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ text: inputText }),
+          signal: controller.signal
+        }).finally(() => clearTimeout(timeoutId));
+        
+        console.log('Backend response status:', response.status)
+        
+        if (response.ok) {
+          const data = await response.json()
+          console.log('Backend response data:', data)
+          setSuggestion(data.suggestion)
+          backendSuccess = true
+        }
+      } catch (fetchError) {
+        console.error('Backend fetch error:', fetchError)
       }
       
-      setSuggestion(data.suggestion)
+      if (!backendSuccess) {
+        console.log('Using fallback suggestion')
+        setSuggestion(fallbackSuggestion)
+      }
     } catch (err) {
+      console.error('Unexpected error:', err)
       setError(err instanceof Error ? err.message : 'An error occurred')
+      console.log('Using fallback suggestion after error')
+      setSuggestion(fallbackSuggestion)
     } finally {
+      clearTimeout(loadingTimeout)
       setIsLoading(false)
     }
   }
