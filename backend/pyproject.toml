@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "next-action-suggester-backend"
+version = "0.1.0"
+description = "Backend for Next Action Suggester app"
+authors = ["Devin AI"]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+fastapi = "^0.110.0"
+uvicorn = "^0.29.0"
+openai = "^1.82.0"
+python-dotenv = "^1.1.0"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
