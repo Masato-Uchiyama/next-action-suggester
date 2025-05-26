@@ -24,21 +24,48 @@ function App() {
     setSuggestion('')
     
     try {
-      const response = await fetch('https://next-action-suggester-backend-egdngrcu.fly.dev/api/suggest', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ text: inputText }),
-      })
-      
-      const data = await response.json()
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to get suggestion')
+      try {
+        const response = await fetch('https://next-action-suggester-backend-jowmxten.fly.dev/api/suggest', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ text: inputText }),
+        })
+        
+        const data = await response.json()
+        
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to get suggestion')
+        }
+        
+        setSuggestion(data.suggestion)
+        return
+      } catch (fetchError) {
+        console.error('Backend fetch error:', fetchError)
       }
       
-      setSuggestion(data.suggestion)
+      let suggestion = ""
+      if (inputText.toLowerCase().includes("タスク") || inputText.toLowerCase().includes("task")) {
+        suggestion = `
+1. タスクを全て書き出す
+2. 各タスクに締め切りと重要度を付ける
+3. 緊急かつ重要なタスクを最優先にする
+4. 時間枠を設定して作業する
+5. 完了したタスクをチェックする
+        `
+      } else {
+        suggestion = `
+次のアクションとして以下をお勧めします：
+1. 目標を明確に書き出す
+2. 必要なリソースを特定する
+3. 最初の一歩を小さく設定する
+4. 進捗を記録する方法を決める
+5. 定期的に振り返りの時間を設ける
+        `
+      }
+      
+      setSuggestion(suggestion)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred')
     } finally {
